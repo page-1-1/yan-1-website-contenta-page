@@ -375,7 +375,7 @@
       <span class="filter-label">Media Type:</span>
       <select class="filter-select" id="media-filter">
         <option value="all">All Types</option>
-        <option value="video">Video</option>
+        <option value="movies">Video</option>
         <option value="audio">Audio</option>
         <option value="texts">Texts</option>
         <option value="image">Image</option>
@@ -538,7 +538,7 @@
         const mediatype = data.metadata?.mediatype;
 
         const formatsByType = {
-          video: ["mpeg4", "h.264", "matroska", "quicktime"],
+          movies: ["mpeg4", "h.264", "matroska", "quicktime"],
           audio: ["mp3", "ogg", "flac", "wav", "aac"],
           texts: ["pdf", "djvu", "epub"],
           image: ["jpeg", "jpg", "png", "tiff"],
@@ -570,10 +570,14 @@
 
       const state = accountState[username];
       
-      const api =
-        `https://archive.org/advancedsearch.php` +
-        `?q=creator:@${username}` +
-        `&fl[]=identifier` +
+      let api = `https://archive.org/advancedsearch.php?q=creator:@${username}`;
+      
+      // Add media type filter if not "all"
+      if (currentMediaType !== "all") {
+        api += `&fl[]=mediatype:"${currentMediaType}"`;
+      }
+      
+      api += `&fl[]=identifier` +
         `&fl[]=title` +
         `&fl[]=creator` +
         `&fl[]=publicdate` +
@@ -925,14 +929,11 @@
       const embedContainer = document.createElement("div");
       embedContainer.className = "embed-container";
       embedContainer.style.flexGrow = "1";
-      embedContainer.style.display = "flex";
-      embedContainer.style.justifyContent = "center";
-      embedContainer.style.alignItems = "center";
       embedContainer.innerHTML = `
         <iframe
           src="${embedUrl}"
           allow="autoplay; fullscreen"
-          style="width:90vw;height:90vh;border:0"
+          style="width:100vw;height:100vh;border:0"
         ></iframe>
       `;
 
