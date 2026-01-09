@@ -4,7 +4,6 @@
   <meta charset="UTF-8" />
   <title>ProfileX - Creator Profile</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
   <style>
     body {
       margin: 0;
@@ -135,6 +134,21 @@
       border: 1px solid #1e293b;
       background: #0f172a;
       color: #e5e7eb;
+    }
+
+    .filter-btn {
+      padding: 0.5rem 1rem;
+      border-radius: 8px;
+      border: none;
+      background: #1e293b;
+      color: #e5e7eb;
+      cursor: pointer;
+      font-weight: 500;
+      height: fit-content;
+    }
+
+    .filter-btn:hover {
+      background: #334155;
     }
 
     .grid {
@@ -329,6 +343,26 @@
       max-height: 200px;
       overflow-y: auto;
     }
+    
+    .zoom-controls {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      z-index: 1000001;
+      display: flex;
+      gap: 5px;
+    }
+    
+    .zoom-btn {
+      background: rgba(0, 0, 0, 0.5);
+      color: white;
+      border: none;
+      width: 30px;
+      height: 30px;
+      border-radius: 50%;
+      font-size: 16px;
+      cursor: pointer;
+    }
   </style>
 </head>
 <body>
@@ -368,6 +402,7 @@
         <option value="software">Software</option>
         <option value="data">Data</option>
       </select>
+      <button class="filter-btn" id="filter-ok-btn">OK</button>
     </div>
   </div>
 
@@ -390,6 +425,7 @@
     const searchType = document.getElementById("search-type");
     const searchBtn = document.getElementById("search-btn");
     const mediaFilter = document.getElementById("media-filter");
+    const filterOkBtn = document.getElementById("filter-ok-btn");
 
     // Store all items for filtering
     let allItems = [];
@@ -407,7 +443,7 @@
         if (!embedUrl) return;
 
         container.innerHTML = `
-          <iframe src="${embedUrl}" loading="lazy"></iframe>
+          <iframe src="${embedUrl}" allow="autoplay; fullscreen"></iframe>
         `;
 
         previewObserver.unobserve(container);
@@ -497,8 +533,8 @@
       renderFilteredItems();
     });
 
-    // Media filter functionality
-    mediaFilter.addEventListener('change', () => {
+    // Media filter OK button functionality
+    filterOkBtn.addEventListener('click', () => {
       currentMediaType = mediaFilter.value;
       renderFilteredItems();
     });
@@ -775,7 +811,8 @@
         element: card,
         mediatype: mediaType,
         title: title.toLowerCase(),
-        tags: tags.toLowerCase()
+        tags: tags.toLowerCase(),
+        originalFilesCount: metadata.originalFilesCount || 0
       });
       
       // Observe preview for lazy loading
@@ -814,6 +851,13 @@
       
       // Render filtered items
       filteredItems.forEach(itemObj => {
+        const btn = itemObj.element.querySelector(".original-files-btn");
+
+        if (btn && itemObj.originalFilesCount > 1) {
+          btn.style.display = "inline-block";
+          btn.textContent = `ᯤ ${itemObj.originalFilesCount}`;
+        }
+
         grid.appendChild(itemObj.element);
       });
       
@@ -883,7 +927,7 @@
       loadMoreBtn.textContent = "Load More";
     }
 
-    // Fullscreen item functionality
+    // Fullscreen item functionality with zoom controls
     function openFullscreen(embedUrl) {
       document.body.style.overflow = "hidden";
 
@@ -898,17 +942,64 @@
         document.body.removeChild(overlay);
       };
 
+      // Create zoom controls
+      const zoomControls = document.createElement("div");
+      zoomControls.className = "zoom-controls";
+      
+      const zoomInBtn = document.createElement("button");
+      zoomInBtn.className = "zoom-btn";
+      zoomInBtn.innerHTML = "+";
+      zoomInBtn.onclick = () => {
+        const iframe = embedContainer.querySelector('iframe');
+        if (iframe) {
+          iframe.style.transform = iframe.style.transform 
+            ? `scale(${parseFloat(iframe.style.transform.replace('scale(', '').replace(')', '')) + 0.1})`
+            : 'scale(1.1)';
+        }
+      };
+      
+      const zoomOutBtn = document.createElement("button");
+      zoomOutBtn.className = "zoom-btn";
+      zoomOutBtn.innerHTML = "-";
+      zoomOutBtn.onclick = () => {
+        const iframe = embedContainer.querySelector('iframe');
+        if (iframe) {
+          iframe.style.transform = iframe.style.transform 
+            ? `scale(${parseFloat(iframe.style.transform.replace('scale(', '').replace(')', '')) - 0.1})`
+            : 'scale(0.9)';
+        }
+      };
+      
+      const resetZoomBtn = document.createElement("button");
+      resetZoomBtn.className = "zoom-btn";
+      resetZoomBtn.innerHTML = "↺";
+      resetZoomBtn.onclick = () => {
+        const iframe = embedContainer.querySelector('iframe');
+        if (iframe) {
+          iframe.style.transform = 'scale(1)';
+        }
+      };
+      
+      zoomControls.appendChild(zoomInBtn);
+      zoomControls.appendChild(zoomOutBtn);
+      zoomControls.appendChild(resetZoomBtn);
+
       const embedContainer = document.createElement("div");
       embedContainer.className = "embed-container";
+      embedContainer.style.flexGrow = "1";
+      embedContainer.style.display = "flex";
+      embedContainer.style.justifyContent = "center";
+      embedContainer.style.alignItems = "center";
       embedContainer.innerHTML = `
         <iframe
           src="${embedUrl}"
-          allowfullscreen
-          style="width:100vw;height:100vh;border:0"
+          allow="autoplay; fullscreen"
+          style="width:90vw;height:90vh;border:0"
         ></iframe>
       `;
 
       overlay.appendChild(closeBtn);
+      overlay.appendChild(zoomControls);
       overlay.appendChild(embedContainer);
       document.body.appendChild(overlay);
     }
