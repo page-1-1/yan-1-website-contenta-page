@@ -592,6 +592,7 @@
         <div class="card-actions">
           <button class="open-btn" data-embed="${embedUrl}">Open Item</button>
           <button class="share-btn" data-share-url="${shareUrl}" data-title="${title}" data-creator="${creator}" data-description="${description}">ᯓ➤</button>
+          <button class="original-files-btn" data-identifier="${identifier}" data-username="${username}">ᯤ</button>
         </div>
       `;
 
@@ -624,6 +625,13 @@
             prompt("Copy this link to share:", fullShareText);
           });
         }
+      };
+
+      // Handle original files button click
+      card.querySelector(".original-files-btn").onclick = (e) => {
+        const identifier = e.target.dataset.identifier;
+        const username = e.target.dataset.username;
+        window.location.href = `items_playlist.html?username=${username}&identifier=${identifier}`;
       };
 
       // Observe preview for lazy loading
@@ -865,6 +873,26 @@
             // Create and display the metadata card
             const metadataCard = createMetadataCard(metadata);
             grid.appendChild(metadataCard);
+            
+            // Add to allItems array for filtering
+            allItems.push({
+              element: metadataCard,
+              mediatype: metadata.metadata.mediatype || "unknown",
+              title: (metadata.metadata.title || metadata.metadata.identifier || "").toLowerCase(),
+              tags: (metadata.metadata.subject ? 
+                (Array.isArray(metadata.metadata.subject) ? 
+                  metadata.metadata.subject.join(", ") : 
+                  metadata.metadata.subject.toString()) : 
+                "none").toLowerCase()
+            });
+            
+            // Check for original files and show button if needed
+            const originalFilesCount = await getOriginalFilesCount(urlIdentifier);
+            if (originalFilesCount > 1) {
+              const originalFilesBtn = metadataCard.querySelector(".original-files-btn");
+              originalFilesBtn.style.display = "inline-block";
+              originalFilesBtn.textContent = `ᯤ ${originalFilesCount}`;
+            }
             
             // Set username from metadata if not already set
             if (!username && metadata.metadata.creator) {
