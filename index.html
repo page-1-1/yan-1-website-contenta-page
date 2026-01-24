@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -369,26 +370,6 @@
     // Store all items for filtering
     let allItems = [];
 
-    // Get clean media URL function
-    async function getCleanMediaUrl(identifier) {
-      try {
-        const res = await fetch(`https://archive.org/metadata/${identifier}`);
-        const data = await res.json();
-
-        const file = data.files.find(f =>
-          f.source === "original" &&
-          /\.(mp4|mp3|jpg|png|webm)$/i.test(f.name)
-        );
-
-        if (!file) return null;
-
-        return `https://archive.org/download/${identifier}/${file.name}`;
-      } catch (e) {
-        console.error(e);
-        return null;
-      }
-    }
-
     // IntersectionObserver for lazy loading previews
     const previewObserver = new IntersectionObserver(entries => {
       entries.forEach(entry => {
@@ -598,8 +579,8 @@
         }
       }
       
-      // ✅ Fixed: Added ?ui=0 to remove Archive interface
-      const embedUrl = `https://archive.org/embed/${identifier}?ui=0`;
+      const reviewUrl = `https://archive.org/details/${identifier}#reviews`;
+      const embedUrl = `https://archive.org/embed/${identifier}`;
       const shareUrl = `https://yan-1-related-1.github.io/yan-1-website-shared-links-redirecting/archive-identifier-page-shared-links-redirecting.html?username=${username}&identifier=${identifier}`;
 
       const card = document.createElement("div");
@@ -626,8 +607,11 @@
       if (metadata.metadata.phone_number) metaHtml += `<div class="meta"><b>Phone:</b> ${metadata.metadata.phone_number}</div>`;
 
       metaHtml += `
+        <div class="meta">
+          <a href="${reviewUrl}" target="_blank" class="reviews-link">Reviews</a>
+        </div>
         <div class="card-actions">
-          <button class="open-btn" data-embed="${embedUrl}" data-identifier="${identifier}">Open Item</button>
+          <button class="open-btn" data-embed="${embedUrl}">Open Item</button>
           <button class="share-btn" data-share-url="${shareUrl}" data-title="${title}" data-creator="${creator}" data-description="${description}">ᯓ➤</button>
           <button class="original-files-btn" data-identifier="${identifier}" data-username="${username}">ᯤ</button>
         </div>
@@ -635,16 +619,9 @@
 
       card.innerHTML = metaHtml;
 
-      card.querySelector(".open-btn").onclick = async (e) => {
-        const identifier = e.target.dataset.identifier;
-        const cleanUrl = await getCleanMediaUrl(identifier);
-        
-        if (cleanUrl) {
-          window.open(cleanUrl, '_blank');
-        } else {
-          const embedUrl = e.target.dataset.embed;
-          openFullscreen(embedUrl);
-        }
+      card.querySelector(".open-btn").onclick = (e) => {
+        const embedUrl = e.target.dataset.embed;
+        openFullscreen(embedUrl);
       };
 
       card.querySelector(".share-btn").onclick = (e) => {
@@ -692,8 +669,8 @@
       const tags = metadata.subject ? metadata.subject.toString() : "None";
       const mediaType = metadata.mediatype || "unknown";
       const description = metadata.description ? metadata.description.toString() : "No description";
-      // ✅ Fixed: Added ?ui=0 to remove Archive interface
-      const embedUrl = `https://archive.org/embed/${identifier}?ui=0`;
+      const reviewUrl = `https://archive.org/details/${identifier}#reviews`;
+      const embedUrl = `https://archive.org/embed/${identifier}`;
       const shareUrl = `https://yan-1-related-1.github.io/yan-1-website-shared-links-redirecting/archive-identifier-page-shared-links-redirecting.html?username=${username}&identifier=${identifier}`;
 
       const card = document.createElement("div");
@@ -722,8 +699,11 @@
       if (metadata.phone_number) metaHtml += `<div class="meta"><b>Phone:</b> ${metadata.phone_number}</div>`;
 
       metaHtml += `
+        <div class="meta">
+          <a href="${reviewUrl}" target="_blank" class="reviews-link">Reviews</a>
+        </div>
         <div class="card-actions">
-          <button class="open-btn" data-embed="${embedUrl}" data-identifier="${identifier}">Open Item</button>
+          <button class="open-btn" data-embed="${embedUrl}">Open Item</button>
           <button class="share-btn" data-share-url="${shareUrl}" data-title="${title}" data-creator="${creator}" data-description="${description}">ᯓ➤</button>
           <button class="original-files-btn" data-identifier="${identifier}" data-username="${username}">ᯤ</button>
         </div>
@@ -731,16 +711,9 @@
 
       card.innerHTML = metaHtml;
 
-      card.querySelector(".open-btn").onclick = async (e) => {
-        const identifier = e.target.dataset.identifier;
-        const cleanUrl = await getCleanMediaUrl(identifier);
-        
-        if (cleanUrl) {
-          window.open(cleanUrl, '_blank');
-        } else {
-          const embedUrl = e.target.dataset.embed;
-          openFullscreen(embedUrl);
-        }
+      card.querySelector(".open-btn").onclick = (e) => {
+        const embedUrl = e.target.dataset.embed;
+        openFullscreen(embedUrl);
       };
 
       card.querySelector(".share-btn").onclick = (e) => {
@@ -850,7 +823,6 @@
       const embedContainer = document.createElement("div");
       embedContainer.className = "embed-container";
       embedContainer.style.flexGrow = "1";
-      // ✅ Already correct since embedUrl now has ?ui=0
       embedContainer.innerHTML = `
         <iframe
           src="${embedUrl}"
