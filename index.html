@@ -578,7 +578,6 @@
         }
       }
       
-      const reviewUrl = `https://archive.org/details/${identifier}#reviews`;
       const embedUrl = `https://archive.org/embed/${identifier}`;
       const shareUrl = `https://yan-1-related-1.github.io/yan-1-website-shared-links-redirecting/archive-identifier-page-shared-links-redirecting.html?username=${username}&identifier=${identifier}`;
 
@@ -606,9 +605,6 @@
       if (metadata.metadata.phone_number) metaHtml += `<div class="meta"><b>Phone:</b> ${metadata.metadata.phone_number}</div>`;
 
       metaHtml += `
-        <div class="meta">
-          <a href="${reviewUrl}" target="_blank" class="reviews-link">View Reviews</a>
-        </div>
         <div class="card-actions">
           <button class="open-btn" data-embed="${embedUrl}">Open Item</button>
           <button class="share-btn" data-share-url="${shareUrl}" data-title="${title}" data-creator="${creator}" data-description="${description}">ᯓ➤</button>
@@ -668,7 +664,6 @@
       const tags = metadata.subject ? metadata.subject.toString() : "None";
       const mediaType = metadata.mediatype || "unknown";
       const description = metadata.description ? metadata.description.toString() : "No description";
-      const reviewUrl = `https://archive.org/details/${identifier}#reviews`;
       const embedUrl = `https://archive.org/embed/${identifier}`;
       const shareUrl = `https://yan-1-related-1.github.io/yan-1-website-shared-links-redirecting/archive-identifier-page-shared-links-redirecting.html?username=${username}&identifier=${identifier}`;
 
@@ -698,9 +693,6 @@
       if (metadata.phone_number) metaHtml += `<div class="meta"><b>Phone:</b> ${metadata.phone_number}</div>`;
 
       metaHtml += `
-        <div class="meta">
-          <a href="${reviewUrl}" target="_blank" class="reviews-link">View Reviews</a>
-        </div>
         <div class="card-actions">
           <button class="open-btn" data-embed="${embedUrl}">Open Item</button>
           <button class="share-btn" data-share-url="${shareUrl}" data-title="${title}" data-creator="${creator}" data-description="${description}">ᯓ➤</button>
