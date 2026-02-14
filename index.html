@@ -266,25 +266,6 @@
       align-items: center;
     }
     
-    .original-files-btn {
-      background: none;
-      border: none;
-      color: #10b981;
-      cursor: pointer;
-      font-size: 1.2rem;
-      padding: 0;
-      margin-left: 0.5rem;
-      display: none; /* Hidden by default */
-    }
-    
-    .original-files-btn:hover {
-      color: #6ee7b7;
-    }
-    
-    .hidden {
-      display: none !important;
-    }
-    
     .home-link {
       position: fixed;
       top: 20px;
@@ -371,11 +352,11 @@
         if (!entry.isIntersecting) return;
 
         const container = entry.target;
-        const embedUrl = container.dataset.embed;
-        if (!embedUrl) return;
+        const thumbnailUrl = container.dataset.thumb;
+        if (!thumbnailUrl) return;
 
         container.innerHTML = `
-          <iframe src="${embedUrl}" allow="autoplay; fullscreen"></iframe>
+          <img src="${thumbnailUrl}" style="width:100%;height:100%;object-fit:cover;" alt="Thumbnail">
         `;
 
         previewObserver.unobserve(container);
@@ -394,6 +375,10 @@
 
     function getArchiveAvatar(username) {
       return `https://archive.org/services/img/@${username}`;
+    }
+
+    function getArchiveThumbnail(identifier) {
+      return `https://archive.org/services/img/${identifier}`;
     }
 
     if (username) {
@@ -459,42 +444,6 @@
       return data;
     }
 
-    async function getOriginalFilesCount(identifier) {
-      try {
-        const res = await fetch(`https://archive.org/metadata/${identifier}`);
-        const data = await res.json();
-
-        if (!Array.isArray(data.files)) return 0;
-
-        const mediatype = data.metadata?.mediatype;
-
-        const formatsByType = {
-          movies: ["mpeg4", "h.264", "matroska", "quicktime"],
-          audio: ["mp3", "ogg", "flac", "wav", "aac"],
-          texts: ["pdf", "djvu", "epub"],
-          image: ["jpeg", "jpg", "png", "tiff"],
-          software: ["zip", "iso", "exe"],
-          data: ["zip", "csv", "json"]
-        };
-
-        const allowedFormats = formatsByType[mediatype] || [];
-
-        const primaryFiles = data.files.filter(file => {
-          if (file.source !== "original") return false;
-
-          const format = (file.format || "").toLowerCase();
-          if (!format) return false;
-
-          return allowedFormats.some(f => format.includes(f));
-        });
-
-        return primaryFiles.length;
-      } catch (e) {
-        console.error(e);
-        return 0;
-      }
-    }
-
     async function fetchItems(username, page) {
       if (!accountState[username] || accountState[username].exhausted) return null;
 
@@ -509,11 +458,6 @@
         `&fl[]=mediatype` +
         `&fl[]=description` +
         `&fl[]=subject` +
-        `&fl[]=gmail` +
-        `&fl[]=link1` +
-        `&fl[]=link2` +
-        `&fl[]=link3` +
-        `&fl[]=phone_number` +
         `&sort[]=publicdate desc` +
         `&rows=50` +
         `&page=${page}` +
@@ -554,14 +498,14 @@
       }
       
       const reviewUrl = `https://archive.org/details/${identifier}#reviews`;
-      const embedUrl = `https://archive.org/embed/${identifier}`;
+      const directUrl = `https://archive.org/details/${identifier}`;
       const shareUrl = `https://yan-1-related-1.github.io/yan-1-website-shared-links-redirecting/archive-identifier-page-shared-links-redirecting.html?username=${username}&identifier=${identifier}`;
+      const thumbnailUrl = getArchiveThumbnail(identifier);
 
       const card = document.createElement("div");
       card.className = "card";
       card.dataset.mediatype = mediatype;
 
-      // Fixed implementation for description display
       let descriptionHtml = '';
       if (description && description !== "No description") {
         descriptionHtml = `
@@ -572,8 +516,8 @@
 
       let metaHtml = `
         <div class="title">${title}</div>
-        <div class="preview-container" data-embed="${embedUrl}">
-          <div class="preview-placeholder">Preview</div>
+        <div class="preview-container" data-thumb="${thumbnailUrl}">
+          <div class="preview-placeholder">Thumbnail</div>
         </div>
         <div class="meta"><b>Creator:</b> ${creator}</div>
         <div class="meta"><b>Date:</b> ${date}</div>
@@ -582,28 +526,21 @@
         ${descriptionHtml}
       `;
 
-      if (metadata.metadata.gmail) metaHtml += `<div class="meta"><b>Gmail:</b> ${metadata.metadata.gmail}</div>`;
-      if (metadata.metadata.link1) metaHtml += `<div class="meta"><b>Link 1:</b> <a href="${metadata.metadata.link1}" target="_blank" style="color:#60a5fa;">${metadata.metadata.link1}</a></div>`;
-      if (metadata.metadata.link2) metaHtml += `<div class="meta"><b>Link 2:</b> <a href="${metadata.metadata.link2}" target="_blank" style="color:#60a5fa;">${metadata.metadata.link2}</a></div>`;
-      if (metadata.metadata.link3) metaHtml += `<div class="meta"><b>Link 3:</b> <a href="${metadata.metadata.link3}" target="_blank" style="color:#60a5fa;">${metadata.metadata.link3}</a></div>`;
-      if (metadata.metadata.phone_number) metaHtml += `<div class="meta"><b>Phone:</b> ${metadata.metadata.phone_number}</div>`;
-
       metaHtml += `
         <div class="meta">
           <a href="${reviewUrl}" target="_blank" class="reviews-link">Reviews</a>
         </div>
         <div class="card-actions">
-          <button class="open-btn" data-embed="${embedUrl}">Open Item</button>
+          <button class="open-btn" data-url="${directUrl}">Open Item</button>
           <button class="share-btn" data-share-url="${shareUrl}" data-title="${title}" data-creator="${creator}" data-description="${description}">ᯓ➤</button>
-          <button class="original-files-btn" data-identifier="${identifier}" data-username="${username}">ᯤ</button>
         </div>
       `;
 
       card.innerHTML = metaHtml;
 
       card.querySelector(".open-btn").onclick = (e) => {
-        const embedUrl = e.target.dataset.embed;
-        openFullscreen(embedUrl);
+        const directUrl = e.target.dataset.url;
+        openFullscreen(directUrl);
       };
 
       card.querySelector(".share-btn").onclick = (e) => {
@@ -628,12 +565,6 @@
             prompt("Copy this link to share:", fullShareText);
           });
         }
-      };
-
-      card.querySelector(".original-files-btn").onclick = (e) => {
-        const identifier = e.target.dataset.identifier;
-        const username = e.target.dataset.username;
-        window.location.href = `items_playlist.html?username=${username}&identifier=${identifier}`;
       };
 
       const preview = card.querySelector(".preview-container");
@@ -650,8 +581,9 @@
       const mediaType = metadata.mediatype || "unknown";
       const description = metadata.description ? metadata.description.toString() : "No description";
       const reviewUrl = `https://archive.org/details/${identifier}#reviews`;
-      const embedUrl = `https://archive.org/embed/${identifier}`;
+      const directUrl = `https://archive.org/details/${identifier}`;
       const shareUrl = `https://yan-1-related-1.github.io/yan-1-website-shared-links-redirecting/archive-identifier-page-shared-links-redirecting.html?username=${username}&identifier=${identifier}`;
+      const thumbnailUrl = getArchiveThumbnail(identifier);
 
       const card = document.createElement("div");
       card.className = "card";
@@ -659,7 +591,6 @@
       card.dataset.title = title.toLowerCase();
       card.dataset.tags = tags.toLowerCase();
 
-      // Fixed implementation for description display
       let descriptionHtml = '';
       if (description && description !== "No description") {
         descriptionHtml = `
@@ -670,8 +601,8 @@
 
       let metaHtml = `
         <div class="title">${title}</div>
-        <div class="preview-container" data-embed="${embedUrl}">
-          <div class="preview-placeholder">Preview</div>
+        <div class="preview-container" data-thumb="${thumbnailUrl}">
+          <div class="preview-placeholder">Thumbnail</div>
         </div>
         <div class="meta"><b>Creator:</b> ${creator}</div>
         <div class="meta"><b>Date:</b> ${date}</div>
@@ -680,28 +611,21 @@
         ${descriptionHtml}
       `;
 
-      if (metadata.gmail) metaHtml += `<div class="meta"><b>Gmail:</b> ${metadata.gmail}</div>`;
-      if (metadata.link1) metaHtml += `<div class="meta"><b>Link 1:</b> <a href="${metadata.link1}" target="_blank" style="color:#60a5fa;">${metadata.link1}</a></div>`;
-      if (metadata.link2) metaHtml += `<div class="meta"><b>Link 2:</b> <a href="${metadata.link2}" target="_blank" style="color:#60a5fa;">${metadata.link2}</a></div>`;
-      if (metadata.link3) metaHtml += `<div class="meta"><b>Link 3:</b> <a href="${metadata.link3}" target="_blank" style="color:#60a5fa;">${metadata.link3}</a></div>`;
-      if (metadata.phone_number) metaHtml += `<div class="meta"><b>Phone:</b> ${metadata.phone_number}</div>`;
-
       metaHtml += `
         <div class="meta">
           <a href="${reviewUrl}" target="_blank" class="reviews-link">Reviews</a>
         </div>
         <div class="card-actions">
-          <button class="open-btn" data-embed="${embedUrl}">Open Item</button>
+          <button class="open-btn" data-url="${directUrl}">Open Item</button>
           <button class="share-btn" data-share-url="${shareUrl}" data-title="${title}" data-creator="${creator}" data-description="${description}">ᯓ➤</button>
-          <button class="original-files-btn" data-identifier="${identifier}" data-username="${username}">ᯤ</button>
         </div>
       `;
 
       card.innerHTML = metaHtml;
 
       card.querySelector(".open-btn").onclick = (e) => {
-        const embedUrl = e.target.dataset.embed;
-        openFullscreen(embedUrl);
+        const directUrl = e.target.dataset.url;
+        openFullscreen(directUrl);
       };
 
       card.querySelector(".share-btn").onclick = (e) => {
@@ -728,18 +652,11 @@
         }
       };
 
-      card.querySelector(".original-files-btn").onclick = (e) => {
-        const identifier = e.target.dataset.identifier;
-        const username = e.target.dataset.username;
-        window.location.href = `items_playlist.html?username=${username}&identifier=${identifier}`;
-      };
-
       allItems.push({
         element: card,
         mediatype: mediaType,
         title: title.toLowerCase(),
-        tags: tags.toLowerCase(),
-        originalFilesCount: metadata.originalFilesCount || 0
+        tags: tags.toLowerCase()
       });
       
       const preview = card.querySelector(".preview-container");
@@ -755,21 +672,9 @@
       
       const fragment = document.createDocumentFragment();
 
-      const itemsWithCounts = await Promise.all(items.map(async (meta) => {
-        const identifier = meta.identifier;
-        const originalFilesCount = await getOriginalFilesCount(identifier);
-        return { ...meta, originalFilesCount };
-      }));
-
-      itemsWithCounts.forEach((meta) => {
+      items.forEach((meta) => {
         const identifier = meta.identifier;
         const card = createCard(identifier, meta);
-        
-        if (meta.originalFilesCount > 1) {
-          const originalFilesBtn = card.querySelector(".original-files-btn");
-          originalFilesBtn.style.display = "inline-block";
-          originalFilesBtn.textContent = `ᯤ ${meta.originalFilesCount}`;
-        }
         
         fragment.appendChild(card);
       });
@@ -783,7 +688,7 @@
       }
     }
 
-    function openFullscreen(embedUrl) {
+    function openFullscreen(directUrl) {
       document.body.style.overflow = "hidden";
 
       const overlay = document.createElement("div");
@@ -791,6 +696,7 @@
 
       const closeBtn = document.createElement("button");
       closeBtn.className = "close-btn";
+      closeBtn.style.background = "rgba(255, 0, 0, 0.8)";
       closeBtn.innerHTML = "✕";
       closeBtn.onclick = () => {
         document.body.style.overflow = "";
@@ -802,7 +708,7 @@
       embedContainer.style.flexGrow = "1";
       embedContainer.innerHTML = `
         <iframe
-          src="${embedUrl}"
+          src="${directUrl}"
           allow="autoplay; fullscreen"
           style="width:100vw;height:100vh;border:0"
         ></iframe>
@@ -875,13 +781,6 @@
                   metadata.metadata.subject.toString()) : 
                 "none").toLowerCase()
             });
-            
-            const originalFilesCount = await getOriginalFilesCount(urlIdentifier);
-            if (originalFilesCount > 1) {
-              const originalFilesBtn = metadataCard.querySelector(".original-files-btn");
-              originalFilesBtn.style.display = "inline-block";
-              originalFilesBtn.textContent = `ᯤ ${originalFilesCount}`;
-            }
             
             if (!username && metadata.metadata.creator) {
               username = metadata.metadata.creator.replace(/^@/, '');
